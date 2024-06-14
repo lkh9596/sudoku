@@ -1,0 +1,47 @@
+h1 {
+    color: #343a40;
+    font-weight: 300;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    max-width: 500px;
+    height: 500px;
+    margin: 20px auto;
+    border-collapse: collapse;
+}
+
+td {
+    width: calc(100% / 9);
+    height: calc(100% / 9);
+    text-align: center;
+    vertical-align: middle;
+    font-size: 20px;
+    background-color: #f8f9fa;
+    color: #495057;
+    border: 1px solid #dee2e6;
+}
+
+td:hover {
+    background-color: #dee2e6;
+}
+
+#buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.btn {
+    padding: 10px 16px;
+    font-size: 16px;
+    margin: 0;
+    border-radius: 5px;
+}
+
+.btn.active {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
