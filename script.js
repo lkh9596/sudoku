@@ -104,9 +104,12 @@ document.addEventListener('DOMContentLoaded', function() {
     buttons.forEach(button => {
         button.addEventListener('click', function() {
             console.log('Button clicked:', this.id); // Debug log
-            buttons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            displaySudoku(this.id); // Update to call displaySudoku with the button id (difficulty)
+            const userConfirmed = confirm('Do you want to start a new game?');
+            if (userConfirmed) {
+                buttons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                displaySudoku(this.id); // Update to call displaySudoku with the button id (difficulty)
+            }
         });
     });
 });
