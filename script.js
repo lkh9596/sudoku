@@ -93,8 +93,11 @@ function displaySudoku(difficulty) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed'); // Debug log
 
-    // Initial display with default difficulty
-    displaySudoku('easy'); // Default difficulty
+    // Initial display with medium difficulty
+    displaySudoku('medium'); // Default difficulty
+
+    // Set the medium button as active
+    document.getElementById('medium').classList.add('active');
 
     // Manage button active state
     const buttons = document.querySelectorAll('.btn');
