@@ -70,7 +70,21 @@ function generateSudoku(difficulty) {
     }
 
     generate(); // Fill the entire board
-    unfill(board, difficulty === 'easy' ? 35 : difficulty === 'medium' ? 45 : 55);
+
+    // Determine the number of cells to unfill based on difficulty
+    let cellsToUnfill;
+    if (difficulty === 'easy') {
+        cellsToUnfill = 35;
+    } else if (difficulty === 'medium') {
+        cellsToUnfill = 45;
+    } else if (difficulty === 'hard') {
+        cellsToUnfill = 55;
+    } else {
+        throw new Error(`Unknown difficulty: ${difficulty}`);
+    }
+
+    console.log(`Generating Sudoku with difficulty: ${difficulty}, cells to unfill: ${cellsToUnfill}`);
+    unfill(board, cellsToUnfill);
 
     return board;
 }
