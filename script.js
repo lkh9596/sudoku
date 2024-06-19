@@ -93,18 +93,18 @@ function displaySudoku(difficulty) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed'); // Debug log
 
-    // Initial display with medium difficulty
-    displaySudoku('medium'); // Default difficulty
+    // Initial display with hard difficulty
+    displaySudoku('hard'); // Default difficulty
 
-    // Set the medium button as active
-    document.getElementById('medium').classList.add('active');
+    // Set the hard button as active
+    document.getElementById('hard').classList.add('active');
 
     // Manage button active state
     const buttons = document.querySelectorAll('.btn');
     buttons.forEach(button => {
         button.addEventListener('click', function() {
             console.log('Button clicked:', this.id); // Debug log
-            const userConfirmed = confirm('Do you want to start a new game?');
+            const userConfirmed = confirm('새 게임을 시작하시겠습니까?');
             if (userConfirmed) {
                 buttons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
