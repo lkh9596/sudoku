@@ -78,7 +78,7 @@ function generateSudoku(difficulty) {
     } else if (difficulty === 'medium') {
         cellsToUnfill = 45;
     } else if (difficulty === 'hard') {
-        cellsToUnfill = 70;
+        cellsToUnfill = 55;
     } else {
         throw new Error(`Unknown difficulty: ${difficulty}`);
     }
