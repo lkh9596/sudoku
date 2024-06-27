@@ -1,5 +1,5 @@
 h1 {
-    color: #343a40;
+    color: black;
     font-weight: 300;
     text-align: center;
     margin-bottom: 20px;
@@ -36,7 +36,7 @@ td {
 }
 
 .sudoku-input:disabled {
-    background-color: #e9ecef;
+    background-color: #f7f7f7; /* Brighter grey background for disabled cells */
 }
 
 #buttons {
