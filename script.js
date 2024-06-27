@@ -74,11 +74,11 @@ function generateSudoku(difficulty) {
     // Determine the number of cells to unfill based on difficulty
     let cellsToUnfill;
     if (difficulty === 'easy') {
-        cellsToUnfill = 35;
-    } else if (difficulty === 'medium') {
         cellsToUnfill = 45;
-    } else if (difficulty === 'hard') {
+    } else if (difficulty === 'medium') {
         cellsToUnfill = 55;
+    } else if (difficulty === 'hard') {
+        cellsToUnfill = 70;
     } else {
         throw new Error(`Unknown difficulty: ${difficulty}`);
     }
