@@ -9,40 +9,54 @@ function generateSudoku(difficulty) {
     let side = base * base;
     let board = Array.from({ length: side }, () => Array(side).fill(0));
 
-    function shuffle(s) {
-        for (let i = s.length - 1; i > 0; i--) {
-            let j = Math.floor(Math.random() * (i + 1));
-            [s[i], s[j]] = [s[j], s[i]];
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
         }
-        return s;
+        return array;
     }
 
-    function pattern(r, c) {
-        return (base * (r % base) + Math.floor(r / base) + c) % side;
-    }
-
-    function generate() {
-        let numbers = shuffle([...Array(side).keys()].map(x => x + 1));
-        for (let i = 0; i < side; i++) {
-            for (let j = 0; j < side; j++) {
-                board[i][j] = numbers[pattern(i, j)];
+    function isValid(board, row, col, num) {
+        for (let x = 0; x < side; x++) {
+            if (board[row][x] === num || board[x][col] === num || board[Math.floor(row / base) * base + Math.floor(x / base)][Math.floor(col / base) * base + x % base] === num) {
+                return false;
             }
         }
+        return true;
     }
 
-    function unfill(board, cells, minNumbersPerSubgrid = 3) {
+    function fillBoard(board) {
+        let numbers = shuffle([...Array(side).keys()].map(x => x + 1));
+        for (let row = 0; row < side; row++) {
+            for (let col = 0; col < side; col++) {
+                if (board[row][col] === 0) {
+                    for (let num of numbers) {
+                        if (isValid(board, row, col, num)) {
+                            board[row][col] = num;
+                            if (fillBoard(board)) {
+                                return true;
+                            }
+                            board[row][col] = 0;
+                        }
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    function unfill(board, cells, minNumbersPerSubgrid = 2) {
         let base = 3;
         let side = base * base;
-        let subgridSize = 3;
-        let attempts = cells;
-        let maxAttempts = cells * 2; // Safeguard against infinite loops
-        let attemptCount = 0;
+        let cellsToRemove = cells;
+        let maxAttempts = side * side * 10; // Safeguard against infinite loops
 
         function getSubgridIndex(row, col) {
-            return Math.floor(row / subgridSize) * subgridSize + Math.floor(col / subgridSize);
+            return Math.floor(row / base) * base + Math.floor(col / base);
         }
 
-        // Track number of filled cells in each subgrid
         let subgridFilledCount = Array.from({ length: side }, () => 0);
         for (let row = 0; row < side; row++) {
             for (let col = 0; col < side; col++) {
@@ -52,33 +66,37 @@ function generateSudoku(difficulty) {
             }
         }
 
-        while (attempts > 0 && attemptCount < maxAttempts) {
-            attemptCount++;
+        let attempts = 0;
+
+        while (cellsToRemove > 0 && attempts < maxAttempts) {
+            attempts++;
             let row = Math.floor(Math.random() * side);
             let col = Math.floor(Math.random() * side);
             let subgridIndex = getSubgridIndex(row, col);
 
-            // Ensure each subgrid keeps at least minNumbersPerSubgrid cells filled
             if (board[row][col] !== 0 && subgridFilledCount[subgridIndex] > minNumbersPerSubgrid) {
                 board[row][col] = 0;
                 subgridFilledCount[subgridIndex]--;
-                attempts--;
+                cellsToRemove--;
             }
         }
 
-        console.log(`Unfilled ${cells - attempts} cells in ${attemptCount} attempts`);
+        console.log(`Unfilled ${cells - cellsToRemove} cells in ${attempts} attempts`);
+        if (cellsToRemove > 0) {
+            console.warn(`Could not unfill ${cellsToRemove} cells due to constraints.`);
+        }
     }
 
-    generate(); // Fill the entire board
+    fillBoard(board);
 
     // Determine the number of cells to unfill based on difficulty
     let cellsToUnfill;
     if (difficulty === 'easy') {
-        cellsToUnfill = 45;
+        cellsToUnfill = 35;
     } else if (difficulty === 'medium') {
-        cellsToUnfill = 55;
+        cellsToUnfill = 45;
     } else if (difficulty === 'hard') {
-        cellsToUnfill = 70;
+        cellsToUnfill = 55;
     } else {
         throw new Error(`Unknown difficulty: ${difficulty}`);
     }
@@ -99,7 +117,14 @@ function displaySudoku(difficulty) {
         const row = table.insertRow();
         for (let j = 0; j < 9; j++) {
             const cell = row.insertCell();
-            cell.textContent = puzzle[i][j] || '';
+            const value = puzzle[i][j] || '';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.maxLength = 1;
+            input.value = value;
+            input.disabled = value !== ''; // Disable prefilled cells
+            input.className = 'sudoku-input';
+            cell.appendChild(input);
         }
     }
 }

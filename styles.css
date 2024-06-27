@@ -16,12 +16,27 @@ table {
 td {
     width: calc(100% / 9);
     height: calc(100% / 9);
+    padding: 0;
+    border: 1px solid #dee2e6;
     text-align: center;
     vertical-align: middle;
+    background-color: #f8f9fa;
+}
+
+.sudoku-input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    text-align: center;
     font-size: 20px;
     background-color: #f8f9fa;
     color: #495057;
-    border: 1px solid #dee2e6;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.sudoku-input:disabled {
+    background-color: #e9ecef;
 }
 
 #buttons {
