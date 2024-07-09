@@ -1,3 +1,5 @@
+let solutionBoard;
+
 function clearBoard(table) {
     while (table.firstChild) {
         table.removeChild(table.firstChild);
@@ -88,6 +90,7 @@ function generateSudoku(difficulty) {
     }
 
     fillBoard(board);
+    solutionBoard = JSON.parse(JSON.stringify(board)); // Store the solution board
 
     // Determine the number of cells to unfill based on difficulty
     let cellsToUnfill;
@@ -107,17 +110,15 @@ function generateSudoku(difficulty) {
     return board;
 }
 
-function displaySudoku(difficulty) {
-    console.log('Displaying Sudoku with difficulty:', difficulty); // Debug log
+function displaySudoku(board) {
     const table = document.querySelector('table');
-    const puzzle = generateSudoku(difficulty);
     clearBoard(table);
 
     for (let i = 0; i < 9; i++) {
         const row = table.insertRow();
         for (let j = 0; j < 9; j++) {
             const cell = row.insertCell();
-            const value = puzzle[i][j] || '';
+            const value = board[i][j] || '';
             if (value) {
                 const input = document.createElement('input');
                 input.type = 'text';
@@ -135,11 +136,16 @@ function displaySudoku(difficulty) {
     }
 }
 
+function initSudoku(difficulty) {
+    const board = generateSudoku(difficulty);
+    displaySudoku(board);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed'); // Debug log
 
     // Initial display with hard difficulty
-    displaySudoku('hard'); // Default difficulty
+    initSudoku('hard'); // Default difficulty
 
     // Set the hard button as active
     document.getElementById('hard').classList.add('active');
@@ -149,11 +155,18 @@ document.addEventListener('DOMContentLoaded', function() {
     buttons.forEach(button => {
         button.addEventListener('click', function() {
             console.log('Button clicked:', this.id); // Debug log
-            const userConfirmed = confirm('New Game?');
-            if (userConfirmed) {
-                buttons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                displaySudoku(this.id); // Update to call displaySudoku with the button id (difficulty)
+            if (this.id !== 'show-answer') {
+                const userConfirmed = confirm('새 게임을 시작하시겠습니까?');
+                if (userConfirmed) {
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    initSudoku(this.id); // Update to call initSudoku with the button id (difficulty)
+                }
+            } else {
+                const userConfirmed = confirm('정답을 확인하시겠습니까?');
+                if (userConfirmed) {
+                    displaySudoku(solutionBoard); // Display the solution board
+                }
             }
         });
     });
