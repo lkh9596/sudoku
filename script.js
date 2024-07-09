@@ -118,13 +118,19 @@ function displaySudoku(difficulty) {
         for (let j = 0; j < 9; j++) {
             const cell = row.insertCell();
             const value = puzzle[i][j] || '';
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.maxLength = 1;
-            input.value = value;
-            input.disabled = value !== ''; // Disable prefilled cells
-            input.className = 'sudoku-input';
-            cell.appendChild(input);
+            if (value) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 1;
+                input.value = value;
+                input.disabled = true; // Disable prefilled cells
+                input.className = 'sudoku-input';
+                cell.appendChild(input);
+            } else {
+                const div = document.createElement('div');
+                div.className = 'sudoku-input'; // Same class for consistent styling
+                cell.appendChild(div);
+            }
         }
     }
 }
@@ -143,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     buttons.forEach(button => {
         button.addEventListener('click', function() {
             console.log('Button clicked:', this.id); // Debug log
-            const userConfirmed = confirm('새 게임을 시작하시겠습니까?');
+            const userConfirmed = confirm('New Game?');
             if (userConfirmed) {
                 buttons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
