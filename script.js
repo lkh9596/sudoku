@@ -29,68 +29,273 @@ function generateSudoku(difficulty) {
     }
 
     function fillBoard(board) {
-        let numbers = shuffle([...Array(side).keys()].map(x => x + 1));
-        for (let row = 0; row < side; row++) {
-            for (let col = 0; col < side; col++) {
-                if (board[row][col] === 0) {
-                    for (let num of numbers) {
-                        if (isValid(board, row, col, num)) {
-                            board[row][col] = num;
-                            if (fillBoard(board)) {
-                                return true;
-                            }
-                            board[row][col] = 0;
-                        }
-                    }
-                    return false;
+        // Find empty cell with the fewest valid candidates (MRV)
+        let bestRow = -1, bestCol = -1;
+        let bestCandidates = null;
+
+        for (let r = 0; r < side; r++) {
+            for (let c = 0; c < side; c++) {
+                if (board[r][c] !== 0) continue;
+
+                const candidates = [];
+                for (let num = 1; num <= side; num++) {
+                    if (isValid(board, r, c, num)) candidates.push(num);
+                }
+
+                // Dead end
+                if (candidates.length === 0) return false;
+
+                if (bestCandidates === null || candidates.length < bestCandidates.length) {
+                    bestCandidates = candidates;
+                    bestRow = r;
+                    bestCol = c;
+
+                    // Can't do better than 1
+                    if (bestCandidates.length === 1) break;
                 }
             }
+            if (bestCandidates && bestCandidates.length === 1) break;
         }
-        return true;
+
+        // No empties => solved
+        if (bestCandidates === null) return true;
+
+        // Randomize to keep puzzles varied
+        shuffle(bestCandidates);
+
+        for (const num of bestCandidates) {
+            board[bestRow][bestCol] = num;
+            if (fillBoard(board)) return true;
+            board[bestRow][bestCol] = 0;
+        }
+        return false;
     }
 
-    function unfill(board, cells, minNumbersPerSubgrid = 2) {
-        let base = 3;
-        let side = base * base;
-        let cellsToRemove = cells;
-        let maxAttempts = side * side * 10; // Safeguard against infinite loops
+    function countSolutions(board, limit = 2) {
+        // Find empty cell with the fewest candidates (MRV)
+        let bestRow = -1, bestCol = -1;
+        let bestCandidates = null;
 
-        function getSubgridIndex(row, col) {
-            return Math.floor(row / base) * base + Math.floor(col / base);
+        for (let r = 0; r < side; r++) {
+            for (let c = 0; c < side; c++) {
+                if (board[r][c] !== 0) continue;
+
+                const candidates = [];
+                for (let num = 1; num <= side; num++) {
+                    if (isValid(board, r, c, num)) candidates.push(num);
+                }
+
+                // Dead end => no solution on this branch
+                if (candidates.length === 0) return 0;
+
+                if (bestCandidates === null || candidates.length < bestCandidates.length) {
+                    bestCandidates = candidates;
+                    bestRow = r;
+                    bestCol = c;
+                    if (bestCandidates.length === 1) break;
+                }
+            }
+            if (bestCandidates && bestCandidates.length === 1) break;
         }
 
-        let subgridFilledCount = Array.from({ length: side }, () => 0);
-        for (let row = 0; row < side; row++) {
-            for (let col = 0; col < side; col++) {
-                if (board[row][col] !== 0) {
-                    subgridFilledCount[getSubgridIndex(row, col)]++;
+        // No empties => found one full solution
+        if (bestCandidates === null) return 1;
+
+        shuffle(bestCandidates);
+
+        let count = 0;
+        for (const num of bestCandidates) {
+            board[bestRow][bestCol] = num;
+            count += countSolutions(board, limit);
+            board[bestRow][bestCol] = 0;
+
+            if (count >= limit) return count; // early exit
+        }
+        return count;
+    }
+    
+
+    function unfillBalancedUniqueSymmetric(board, cellsToRemove, opts = {}) {
+        const {
+            // Aesthetic balance constraints (avoid empty rows/cols/boxes)
+            minRowClues = 1,
+            minColClues = 1,
+            minBoxClues = 1,
+
+            // Optional “don’t let one box stay too dense” cap (purely aesthetic)
+            maxBoxClues = 9,
+
+            // Symmetry makes it look intentional (removes in pairs)
+            symmetric = true,
+
+            // Safeguards
+            maxPasses = 20,          // how many full passes over candidates
+            maxAttempts = 20000      // total removal attempts before giving up this run
+        } = opts;
+
+        function boxIndex(r, c) {
+            return Math.floor(r / base) * base + Math.floor(c / base);
+        }
+
+        // Count initial clues
+        const rowCount = Array(side).fill(0);
+        const colCount = Array(side).fill(0);
+        const boxCount = Array(side).fill(0);
+
+        for (let r = 0; r < side; r++) {
+            for (let c = 0; c < side; c++) {
+                if (board[r][c] !== 0) {
+                    rowCount[r]++;
+                    colCount[c]++;
+                    boxCount[boxIndex(r, c)]++;
                 }
             }
         }
 
+        // Candidate list: all filled cells (we will try to remove from densest areas first)
+        const cells = [];
+        for (let r = 0; r < side; r++) {
+            for (let c = 0; c < side; c++) {
+                if (board[r][c] !== 0) cells.push([r, c]);
+            }
+        }
+
+        // Shuffle once to avoid always same look
+        shuffle(cells);
+
+        // Helper to compute "density score" (higher score = better candidate to remove)
+        function scoreCell(r, c) {
+            const b = boxIndex(r, c);
+            return rowCount[r] + colCount[c] + boxCount[b];
+        }
+
+        // Pick cells in a way that prefers dense regions
+        function sortedCandidates() {
+            // Sort by score descending (dense first). Stable enough for small list.
+            return cells
+                .filter(([r, c]) => board[r][c] !== 0)
+                .sort((a, b) => scoreCell(b[0], b[1]) - scoreCell(a[0], a[1]));
+        }
+
+        function canRemoveSingle(r, c) {
+            const b = boxIndex(r, c);
+            if (rowCount[r] <= minRowClues) return false;
+            if (colCount[c] <= minColClues) return false;
+            if (boxCount[b] <= minBoxClues) return false;
+            return true;
+        }
+
+        function applyRemove(r, c) {
+            const b = boxIndex(r, c);
+            board[r][c] = 0;
+            rowCount[r]--;
+            colCount[c]--;
+            boxCount[b]--;
+        }
+
+        function revertRemove(r, c, val) {
+            const b = boxIndex(r, c);
+            board[r][c] = val;
+            rowCount[r]++;
+            colCount[c]++;
+            boxCount[b]++;
+        }
+
+        function passesAestheticCaps() {
+            // Only box cap here (row/col caps aren’t needed; min constraints already enforced)
+            for (let b = 0; b < side; b++) {
+                if (boxCount[b] > maxBoxClues) return false;
+            }
+            return true;
+        }
+
+        let removed = 0;
         let attempts = 0;
 
-        while (cellsToRemove > 0 && attempts < maxAttempts) {
-            attempts++;
-            let row = Math.floor(Math.random() * side);
-            let col = Math.floor(Math.random() * side);
-            let subgridIndex = getSubgridIndex(row, col);
+        // For symmetry, removals should be even unless the center cell is removed once
+        const target = cellsToRemove;
 
-            if (board[row][col] !== 0 && subgridFilledCount[subgridIndex] > minNumbersPerSubgrid) {
-                board[row][col] = 0;
-                subgridFilledCount[subgridIndex]--;
-                cellsToRemove--;
+        // If we want an odd number of removals with symmetry, we MUST remove the center cell once.
+        if (symmetric && (target % 2 === 1)) {
+            const cr = Math.floor(side / 2); // 4
+            const cc = Math.floor(side / 2); // 4
+
+            if (board[cr][cc] === 0) return false; // shouldn't happen
+
+            if (!canRemoveSingle(cr, cc)) return false;
+
+            const saved = board[cr][cc];
+            applyRemove(cr, cc);
+
+            const test = board.map(row => row.slice());
+            const solCount = countSolutions(test, 2);
+
+            if (solCount === 1) {
+                removed += 1;
+            } else {
+                revertRemove(cr, cc, saved);
+                return false; // force a restart; this solution grid can't support odd-symmetric target
             }
         }
 
-        console.log(`Unfilled ${cells - cellsToRemove} cells in ${attempts} attempts`);
-        if (cellsToRemove > 0) {
-            console.warn(`Could not unfill ${cellsToRemove} cells due to constraints.`);
-        }
-    }
+        for (let pass = 0; pass < maxPasses && removed < target && attempts < maxAttempts; pass++) {
+            const candidates = sortedCandidates();
 
-    fillBoard(board);
-    solutionBoard = JSON.parse(JSON.stringify(board)); // Store the solution board
+            for (const [r1, c1] of candidates) {
+                if (removed >= target || attempts >= maxAttempts) break;
+                if (board[r1][c1] === 0) continue;
+
+                // Determine symmetric partner
+                const r2 = side - 1 - r1;
+                const c2 = side - 1 - c1;
+
+                // Determine how many cells we'd remove this step
+                const isCenter = (r1 === r2 && c1 === c2);
+                const stepSize = (symmetric && !isCenter) ? 2 : 1;
+
+                // Don’t overshoot target
+                if (removed + stepSize > target) continue;
+
+                // Must be removable according to min constraints
+                if (!canRemoveSingle(r1, c1)) continue;
+                if (symmetric && !isCenter) {
+                    if (board[r2][c2] === 0) continue;
+                    if (!canRemoveSingle(r2, c2)) continue;
+                }
+
+                attempts++;
+
+                // Save values and remove
+                const v1 = board[r1][c1];
+                const v2 = (symmetric && !isCenter) ? board[r2][c2] : null;
+
+                applyRemove(r1, c1);
+                if (symmetric && !isCenter) applyRemove(r2, c2);
+
+                // Aesthetic cap check (optional but helps avoid ugly “dense box”)
+                if (!passesAestheticCaps()) {
+                    // revert immediately
+                    revertRemove(r1, c1, v1);
+                    if (symmetric && !isCenter) revertRemove(r2, c2, v2);
+                    continue;
+                }
+
+                // Uniqueness check on a copy (critical)
+                const test = board.map(row => row.slice());
+                const solCount = countSolutions(test, 2);
+
+                if (solCount === 1) {
+                    removed += stepSize;
+                } else {
+                    // revert if not unique
+                    revertRemove(r1, c1, v1);
+                    if (symmetric && !isCenter) revertRemove(r2, c2, v2);
+                }
+            }
+        }
+
+        return removed === target;
+    }
 
     // Determine the number of cells to unfill based on difficulty
     let cellsToUnfill;
@@ -104,10 +309,63 @@ function generateSudoku(difficulty) {
         throw new Error(`Unknown difficulty: ${difficulty}`);
     }
 
-    console.log(`Generating Sudoku with difficulty: ${difficulty}, cells to unfill: ${cellsToUnfill}`);
-    unfill(board, cellsToUnfill);
+    // Try multiple times to get exactly the requested removals while keeping uniqueness + balance
+    const maxRestarts = 30;
+    let success = false;
 
+    let bestPuzzle = null;
+    let bestRemoved = -1;
+
+    for (let attempt = 1; attempt <= maxRestarts; attempt++) {
+    // fresh solved grid
+    board = Array.from({ length: side }, () => Array(side).fill(0));
+    fillBoard(board);
+    solutionBoard = board.map(r => r.slice());
+
+    // try to carve a puzzle
+    const puzzle = board.map(r => r.slice());
+
+    // IMPORTANT: make box cap non-blocking
+    const ok = unfillBalancedUniqueSymmetric(puzzle, cellsToUnfill, {
+        minRowClues: 1,
+        minColClues: 1,
+        minBoxClues: 1,
+        maxBoxClues: 9,     // <-- change to 9 for now
+        symmetric: true,
+        maxPasses: 25,
+        maxAttempts: 30000
+    });
+
+    // Count how many were removed (so we can keep the best attempt)
+    const removedNow = puzzle.flat().filter(v => v === 0).length;
+
+    if (removedNow > bestRemoved) {
+        bestRemoved = removedNow;
+        bestPuzzle = puzzle;
+    }
+
+    if (ok) {
+        success = true;
+        bestPuzzle = puzzle;
+        console.log(`Succeeded: removed exactly ${cellsToUnfill} on restart #${attempt}`);
+        break;
+    } else {
+        console.warn(`Restart #${attempt} did not hit exactly ${cellsToUnfill}. Removed ${removedNow} instead.`);
+    }
+    }
+
+    if (!bestPuzzle) {
+    throw new Error("Puzzle generation failed completely.");
+    }
+
+    if (!success) {
+    console.warn(`Could not hit exactly ${cellsToUnfill} removals after ${maxRestarts} restarts. Using best attempt: removed ${bestRemoved}.`);
+    }
+
+    board = bestPuzzle;
+    console.log("Zeros in returned board:", board.flat().filter(v => v === 0).length);
     return board;
+
 }
 
 function displaySudoku(board) {

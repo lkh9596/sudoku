@@ -24,5 +24,3 @@ This web app generates Sudoku puzzles for you to replicate and solve manually on
 
 ## Game URL 
 https://lkh9596.github.io/sudoku/
-
-Test edit from new laptop
