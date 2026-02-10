@@ -402,8 +402,15 @@ function initSudoku(difficulty) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded and parsed'); // Debug log
 
-    // Initial display with hard difficulty
-    initSudoku('hard'); // Default difficulty
+    // Check if there's a saved solution to restore
+    const savedSolution = localStorage.getItem('sudoku-solution');
+    if (savedSolution) {
+        solutionBoard = JSON.parse(savedSolution);
+        displaySudoku(solutionBoard);
+    } else {
+        // Initial display with hard difficulty
+        initSudoku('hard'); // Default difficulty
+    }
 
     // Set the hard button as active
     document.getElementById('hard').classList.add('active');
@@ -416,6 +423,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.id !== 'show-answer') {
                 const userConfirmed = confirm('새 게임을 시작하시겠습니까?');
                 if (userConfirmed) {
+                    // Clear saved solution when starting a new game
+                    localStorage.removeItem('sudoku-solution');
                     buttons.forEach(btn => btn.classList.remove('active'));
                     this.classList.add('active');
                     initSudoku(this.id); // Update to call initSudoku with the button id (difficulty)
@@ -423,6 +432,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const userConfirmed = confirm('정답을 확인하시겠습니까?');
                 if (userConfirmed) {
+                    // Save solution so it persists across refreshes
+                    localStorage.setItem('sudoku-solution', JSON.stringify(solutionBoard));
                     displaySudoku(solutionBoard); // Display the solution board
                 }
             }
