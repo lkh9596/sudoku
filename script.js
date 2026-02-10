@@ -396,6 +396,8 @@ function displaySudoku(board) {
 
 function initSudoku(difficulty) {
     const board = generateSudoku(difficulty);
+    localStorage.setItem('sudoku-puzzle', JSON.stringify(board));
+    localStorage.setItem('sudoku-solution-key', JSON.stringify(solutionBoard));
     displaySudoku(board);
 }
 
@@ -404,9 +406,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Check if there's a saved solution to restore
     const savedSolution = localStorage.getItem('sudoku-solution');
+    const savedPuzzle = localStorage.getItem('sudoku-puzzle');
+
     if (savedSolution) {
         solutionBoard = JSON.parse(savedSolution);
         displaySudoku(solutionBoard);
+    } else if (savedPuzzle) {
+        solutionBoard = JSON.parse(localStorage.getItem('sudoku-solution-key'));
+        displaySudoku(JSON.parse(savedPuzzle));
     } else {
         // Initial display with hard difficulty
         initSudoku('hard'); // Default difficulty
@@ -423,8 +430,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.id !== 'show-answer') {
                 const userConfirmed = confirm('새 게임을 시작하시겠습니까?');
                 if (userConfirmed) {
-                    // Clear saved solution when starting a new game
+                    // Clear saved data when starting a new game
                     localStorage.removeItem('sudoku-solution');
+                    localStorage.removeItem('sudoku-puzzle');
+                    localStorage.removeItem('sudoku-solution-key');
                     buttons.forEach(btn => btn.classList.remove('active'));
                     this.classList.add('active');
                     initSudoku(this.id); // Update to call initSudoku with the button id (difficulty)
