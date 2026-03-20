@@ -347,10 +347,8 @@ function generateSudoku(difficulty) {
     if (ok) {
         success = true;
         bestPuzzle = puzzle;
-        console.log(`Succeeded: removed exactly ${cellsToUnfill} on restart #${attempt}`);
-        break;
+            break;
     } else {
-        console.warn(`Restart #${attempt} did not hit exactly ${cellsToUnfill}. Removed ${removedNow} instead.`);
     }
     }
 
@@ -359,11 +357,9 @@ function generateSudoku(difficulty) {
     }
 
     if (!success) {
-    console.warn(`Could not hit exactly ${cellsToUnfill} removals after ${maxRestarts} restarts. Using best attempt: removed ${bestRemoved}.`);
     }
 
     board = bestPuzzle;
-    console.log("Zeros in returned board:", board.flat().filter(v => v === 0).length);
     return board;
 
 }
@@ -395,14 +391,22 @@ function displaySudoku(board) {
 }
 
 function initSudoku(difficulty) {
-    const board = generateSudoku(difficulty);
-    localStorage.setItem('sudoku-puzzle', JSON.stringify(board));
-    localStorage.setItem('sudoku-solution-key', JSON.stringify(solutionBoard));
-    displaySudoku(board);
+    const loading = document.getElementById('loading');
+    const table = document.querySelector('table');
+    loading.style.display = 'block';
+    table.style.display = 'none';
+
+    setTimeout(() => {
+        const board = generateSudoku(difficulty);
+        localStorage.setItem('sudoku-puzzle', JSON.stringify(board));
+        localStorage.setItem('sudoku-solution-key', JSON.stringify(solutionBoard));
+        displaySudoku(board);
+        loading.style.display = 'none';
+        table.style.display = '';
+    }, 50);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM fully loaded and parsed'); // Debug log
 
     // Check if there's a saved solution to restore
     const savedSolution = localStorage.getItem('sudoku-solution');
@@ -426,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const buttons = document.querySelectorAll('.btn');
     buttons.forEach(button => {
         button.addEventListener('click', function() {
-            console.log('Button clicked:', this.id); // Debug log
             if (this.id !== 'show-answer') {
                 const userConfirmed = confirm('새 게임을 시작하시겠습니까?');
                 if (userConfirmed) {
